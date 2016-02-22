@@ -149,6 +149,13 @@ class ColumnConfigurationBuilder
                     return $data[$name];
                 }
 
+                /**
+                 * WARNING: this is a 'temporary' solution to #26 - Returned columns are empty
+                 */
+                if (is_object($data) && property_exists($data, 'attributes') && isset($data->$name)) {
+                    return $data->$name;
+                }
+
                 if (is_object($data) && property_exists($data, $name)) {
                     return $data->$name;
                 }
