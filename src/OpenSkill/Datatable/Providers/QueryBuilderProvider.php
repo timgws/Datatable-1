@@ -5,6 +5,8 @@ namespace OpenSkill\Datatable\Providers;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use OpenSkill\Datatable\Cache\CacheInterface;
+use OpenSkill\Datatable\Cache\CacheMissException;
 use OpenSkill\Datatable\Columns\ColumnConfiguration;
 use OpenSkill\Datatable\Columns\ColumnOrder;
 use OpenSkill\Datatable\Columns\ColumnSearch;
@@ -62,13 +64,20 @@ class QueryBuilderProvider implements Provider
     private $columnConfiguration = [];
 
     /**
+     * @var CacheInterface
+     */
+    private $cache;
+
+    /**
      * CollectionProvider constructor.
      * @param QueryBuilder $query The query to base the built query on
      */
-    public function __construct(QueryBuilder $query)
+    public function __construct(QueryBuilder $query, CacheInterface $cache)
     {
         $this->originalQuery = $query;
         $this->query = clone $query;
+
+        $this->cache = $cache;
     }
 
     /**
@@ -112,9 +121,6 @@ class QueryBuilderProvider implements Provider
         $this->queryBeforeLimits = clone $this->query;
         $this->limitQuery();
 
-        // original # of items
-        $filteredItems = $this->originalQuery->count();
-
         // # of items in filtered & ordered dataset
         $dataCount = $this->queryBeforeLimits->count();
 
@@ -125,9 +131,33 @@ class QueryBuilderProvider implements Provider
         // slice the result into the right size
         return new ResponseData(
             $response,
-            $filteredItems,
+            $this->getTotalItems(),
             $dataCount
         );
+    }
+
+    private function getTotalItems()
+    {
+        $totalItems = $this->originalQuery->count();
+        return $totalItems;
+
+        try {
+            $value = $this->cache->getTotalItems();
+
+            return $value;
+        } catch (CacheMissException $e) {
+
+        }
+
+        $totalItems = $this->originalQuery->count();
+
+        try {
+            $this->cache->putTotalItems($totalItems);
+        } catch (CacheMissException $e) {
+
+        }
+
+        return $totalItems;
     }
 
     /**
