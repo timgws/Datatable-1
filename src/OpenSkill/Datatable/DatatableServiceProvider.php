@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use OpenSkill\Datatable\Versions\Datatable110Version;
 use OpenSkill\Datatable\Versions\Datatable19Version;
+use OpenSkill\Datatable\Versions\DynatableVersion;
 use OpenSkill\Datatable\Versions\VersionEngine;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -37,8 +38,9 @@ class DatatableServiceProvider extends ServiceProvider
         $this->app->singleton("datatable", function (Application $app) use ($requestStack) {
             $dt = new Datatable19Version($requestStack);
             $dt2 = new Datatable110Version($requestStack);
+            $dt3 = new DynatableVersion($requestStack);
             return new Datatable(
-                new VersionEngine([$dt2, $dt]),
+                new VersionEngine([$dt2, $dt, $dt3]),
                 $app->make('Illuminate\Contracts\View\Factory'),
                 $app->make('Illuminate\Contracts\Config\Repository')
             );
